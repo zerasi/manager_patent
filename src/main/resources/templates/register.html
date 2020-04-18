@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>注册</title>
+	<script type="text/javascript" th:src="@{/js/jquery-1.8.3.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery.serializejson.min.js}"></script>
+<style>
+
+	* {
+		box-sizing: border-box;
+	}
+
+	body {
+		background-color: #efefef;
+		font-family: 'Open Sans', sans-serif;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 100vh;
+		margin: 0;
+	}
+
+	.container {
+		background-color: #fff;
+		border-radius: 5px;
+		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+		overflow: hidden;
+		width: 630px;
+		max-width: 100%;
+	}
+
+	.header {
+		border-bottom: 1px solid #f0f0f0;
+		background-color: #f7f7f7;
+		padding: 20px 40px;
+	}
+
+	.header h2 {
+		margin: 0;
+	}
+
+	.form {
+		padding: 30px 40px;
+	}
+
+	.form button {
+		background-color: #c9302c;
+		border: 2px solid #c9302c;
+		border-radius: 4px;
+		color: #fff;
+		display: block;
+		font-family: inherit;
+		font-size: 16px;
+		padding: 10px;
+		margin-top: 20px;
+		width: 100%;
+	}
+
+	.form-control {
+		margin-bottom: 10px;
+		padding-bottom: 20px;
+		position: relative;
+	}
+
+	.form-control label {
+		margin-bottom: 5px;
+	}
+
+	.form-control input {
+		border: 2px solid #f0f0f0;
+		border-radius: 4px;
+		display: block;
+		font-family: inherit;
+		font-size: 14px;
+		padding: 10px;
+		width: 100%;
+	}
+
+	.form-control input:focus {
+		outline: 0;
+		border-color: #777;
+	}
+
+	.form-control.success input {
+		border-color: #2ecc71;
+	}
+
+	.form-control.error input {
+		border-color: #e74c3c;
+	}
+
+	.form-control i {
+		visibility: hidden;
+		position: absolute;
+		top: 40px;
+		right: 10px;
+	}
+
+	.form-control.success i.fa-check-circle {
+		color: #2ecc71;
+		visibility: visible;
+	}
+
+	.form-control.error i.fa-exclamation-circle {
+		color: #e74c3c;
+		visibility: visible;
+	}
+
+	.form-control small {
+		color: #e74c3c;
+		position: absolute;
+		bottom: 0;
+		left: 0;
+	}
+
+</style>
+<script>
+	function reg() {
+		var msg = '';
+		var dataForm = $("#form").serializeJSON();
+		var regex_pass = new RegExp('(?=.*[0-9])(?=.*[a-zA-Z])(?=.*[^a-zA-Z0-9]).{8,30}');
+		var re_mail = /^(\w-*\.*)+@(\w-?)+(\.\w{2,})+$/;
+		var re_acc = /^1\d{10}$/;
+		if(dataForm.username==null || dataForm.username.trim()==''){
+			msg = '用户名不能为空';
+			//$("#msg").html('用户名不能为空');
+		}else if(!regex_pass.test(dataForm.password)){
+			msg = '密码中必须包含字母、数字、特称字符，至少8个字符，最多30个字符';
+			// $("#msg").html('密码中必须包含字母、数字、特称字符，至少8个字符，最多30个字符');
+		}else if(!re_mail.test(dataForm.email)){
+			msg = '邮箱格式不正确';
+			// $("#msg").html('邮箱格式不正确');
+		}else if(!re_acc.test(dataForm.telephone)){
+			msg = '手机号码格式不正确';
+			// $("#msg").html('手机号码格式不正确');
+		}
+		if(msg!=''){
+			$("#msg").html(msg);
+		}else{
+			$.ajax({
+				url:"/user/doRegister",
+				type:"POST",
+				data:dataForm,
+				dataType:'json',
+				success:function(result){
+					$("#msg").html(result.msg);
+					if(result.code != 200){
+						$("#msg").html(result.msg);
+					}else{
+						$("#msg").html("注册成功赶快去登陆吧！！");
+
+					}
+				}
+			});
+		}
+
+	}
+
+</script>
+</head>
+<body>
+
+<div class="container">
+	<div class="header">
+		<h2>注册用户</h2>
+	</div>
+	<form id="form" class="form">
+		<div class="form-control">
+			<label for="username">用户名</label>
+			<input type="text" placeholder="用户名" id="username" name="username"/>
+			<i class="fas fa-check-circle"></i>
+			<i class="fas fa-exclamation-circle"></i>
+		</div>
+		<div class="form-control">
+			<label for="username">密码</label>
+			<input type="password" placeholder="密码" id="password" name="password"/>
+			<i class="fas fa-check-circle"></i>
+			<i class="fas fa-exclamation-circle"></i>
+		</div>
+		<div class="form-control">
+			<label for="username">昵称</label>
+			<input type="text" placeholder="昵称" id="nickname" name="nickname"/>
+			<i class="fas fa-check-circle"></i>
+			<i class="fas fa-exclamation-circle"></i>
+		</div>
+		<div class="form-control">
+			<label for="username">性别</label>
+			<select name="sex" id="sex" style="border: 2px solid #f0f0f0;  border-radius: 4px;  display: block; font-family: inherit; font-size: 14px; padding: 10px; width: 100%;" >
+				<option value="1" selected="selected">男</option>
+				<option value="2">女</option>
+			</select>
+			<i class="fas fa-check-circle"></i>
+			<i class="fas fa-exclamation-circle"></i>
+		</div>
+		<div class="form-control">
+			<label for="username">出生年月</label>
+			<input type="date" id="birthday" name="birthday"/>
+			<i class="fas fa-check-circle"></i>
+			<i class="fas fa-exclamation-circle"></i>
+		</div>
+		<div class="form-control">
+			<label for="username">联系电话</label>
+			<input type="text" placeholder="联系电话" id="telephone" name="telephone"/>
+			<i class="fas fa-check-circle"></i>
+			<i class="fas fa-exclamation-circle"></i>
+		</div>
+		<div class="form-control">
+			<label for="username">邮箱</label>
+			<input type="text" placeholder="邮箱" id="email" name="email"/>
+			<i class="fas fa-check-circle"></i>
+			<i class="fas fa-exclamation-circle"></i>
+			<small id="msg"></small>
+		</div>
+		<button onclick="reg()" type="button">提交</button>
+	</form>
+</div>
+
+<script>
+
+
+</script>
+
+</body>
+</html>

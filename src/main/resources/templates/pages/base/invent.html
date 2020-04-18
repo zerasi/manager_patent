@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>类型管理</title>
+    <!-- 导入jquery核心类库 -->
+    <script type="text/javascript" th:src="@{/js/jquery-1.8.3.js}"></script>
+    <!-- 导入easyui类库 -->
+    <link rel="stylesheet" type="text/css" th:href="@{/js/easyui/themes/bootstrap/easyui.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/js/easyui/themes/icon.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/js/easyui/ext/portal.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/default.css}">
+    <script type="text/javascript" th:src="@{/js/easyui/jquery.easyui.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/easyui/ext/jquery.portal.js}"></script>
+    <script type="text/javascript" th:src="@{/js/easyui/ext/jquery.cookie.js}"></script>
+    <script th:src="@{/js/easyui/locale/easyui-lang-zh_CN.js}" type="text/javascript"></script>
+    <script type="text/javascript" th:src="@{/js/jquery.serializejson.min.js}"></script>
+    <script type="text/javascript" th:inline="none">
+
+        function checkPermission() {
+            var pers = [];
+            var permissions = jQuery.parseJSON(localStorage.permission);
+            $("[permission]").each(function() {
+                var per = $(this).attr("permission");
+                if ($.inArray(per, permissions) > 0) {
+                    $(this).show();
+                }
+            });
+
+            return pers;
+        }
+
+        $(function(){
+
+            //功能按钮初始化
+            checkPermission();
+
+            // 先将body隐藏，再显示，不会出现页面刷新效果
+            $("body").css({visibility:"visible"});
+
+            var username = localStorage.username;
+            $('#grid').datagrid( {
+                iconCls : 'icon-forward',
+                border : false,
+                striped : true,
+               	pageList: [10,20],
+                pagination : true,
+                url : "/invent/listByPage",
+                idField : 'id',
+                columns : columns,
+                fit:true,
+                onDblClickRow : doDblClickRow
+            });
+            $("#save").click(function(){
+                if($("#formdata").form('validate')){
+                    var dataform=$("#formdata").serializeJSON();
+                    $.post("/invent/verify",dataform,function(data){
+                        if (data.code == '200') {
+                            $.messager.alert("提示", data.msg,"info",function () {
+                                $('#grid').datagrid("reload");
+                                $('#standardWindow').form('clear');
+                            });
+                        }else{
+                            $.messager.alert("提示", data.msg);
+                        }
+                        $("#standardWindow").window("close");
+                    })
+                }
+            })
+
+
+            $("#img").change(function() {
+                var file = this.files[0];
+                var reader = new FileReader();
+                reader.readAsDataURL(file);//调用自带方法进行转换
+                reader.onload = function(e) {
+                    img = e.target.result;
+                };
+            });
+        });
+
+        function doAdd(){
+            img = null;
+            $("#formdata").form("reset");
+            $("#hiddenId").val(null);
+            $("#standardWindow").window("open");
+        }
+        function doSearch(){
+            $("#standardWindow_s").window("open");
+
+        }
+        function doSearch_clik(){
+            var dataform=$("#formdata_s").serializeJSON();
+            $('#grid').datagrid('load',dataform);
+        }
+        //修改
+        function doVerify(){
+
+            $("#formdata").form("reset");
+            var rowDatas = $("#grid").datagrid("getSelections");
+            if(rowDatas.length==1){
+                if(rowDatas[0].status_cd != '1'){
+                    $("#standardWindow").window("open");
+                    var row=rowDatas[0];
+                    $("#invent_id_h").val(row.id);
+                    $("#user_id_h").val(localStorage.userId);
+                    $("#standardWindow").window("open");
+                }else{
+                    $.messager.alert("提示","该专利已审核通过");
+                }
+            }else{
+                $.messager.alert("提示","请选择一条数据");
+            }
+        }
+        //删除
+        function doDelete(){
+            var rowDatas = $("#grid").datagrid("getSelections");
+            if(rowDatas.length==0){
+                $.messager.alert("提示","请选项需要删除的数据");
+            }else{
+                $.messager.confirm("提示","是否要删除选择的数据?",function(r){
+                    if(r){
+                        //获取选中数据的id
+                        var ids  = new Array();
+                        for (var i = 0; i < rowDatas.length; i++) {
+                            ids.push(rowDatas[i].id);
+                        }
+                        $.ajax({
+                            url:"/invent/delete",
+                            type:"POST",
+                            contentType: "application/json; charset=utf-8",
+                            data:JSON.stringify({inventIds:ids}),
+                            dataType:'json',
+                            success:function(data){
+                                if (data.code == '200') {
+                                    $.messager.alert("提示", data.msg,"info",function () {
+                                        $('#grid').datagrid('reload');
+                                        $("#grid").datagrid("clearChecked");
+                                    });
+                                }else{
+                                    $.messager.alert("提示", data.msg);
+                                }
+                            }
+                        });
+                    }
+                })
+            }
+        }
+
+        // 定义列
+        var columns = [ [ {
+            field : 'id',
+            checkbox : true
+        },{
+            field : 'invent_name',
+            title : '专利',
+            width : 150,
+            align : 'center'
+        } ,{
+            field : 'cate_type',
+            title : '专利类型',
+            width : 150,
+            align : 'center',formatter:function(data,row, index){
+                if(row.cateType!=null){
+                    return row.cateType.name;
+                }
+                return "";
+            }
+        },{
+            field : 'area_type',
+            title : '地域类型',
+            width : 150,
+            align : 'center'
+        },{
+            field : 'bak1',
+            title : '申请用户',
+            width : 150,
+            align : 'center'
+        },{
+            field : 'apply_men',
+            title : '申请人',
+            width : 150,
+            align : 'center'
+        },{
+            field : 'card_no',
+            title : '证件类型',
+            width : 180,
+            align : 'center'
+        },{
+            field : 'acc_nbr',
+            title : '联系电话',
+            width : 150,
+            align : 'center'
+        },{
+            field : 'adress',
+            title : '联系地址',
+            width : 150,
+            align : 'center'
+        } ,{
+            field : 'attach',
+            title : '附件',
+            width : 150,
+            align : 'center',formatter:function(data,row, index){
+                if(data!=null){
+                    return '<a href="/showImg.do?imgurl='+data+'">'+data+'</a>';
+                }
+                return '';
+            }
+        },{
+            field : 'create_date',
+            title : '申报日期',
+            width : 150,
+            align : 'center'
+        },{
+            field : 'verify_date',
+            title : '审核日期',
+            width : 150,
+            align : 'center'
+        },{
+            field : 'status_cd',
+            title : '申报状态',
+            width : 150,
+            align : 'center',formatter:function(data,row, index){
+                if(data=='0'){
+                    return '申请中';
+                }else if(data=='1'){
+                    return '已审核';
+                }else if(data=='2'){
+                    return '被驳回';
+                }
+                return "";
+            }
+        },{
+            field : 'bak2',
+            title : '是否公开',
+            width : 150,
+            align : 'center',formatter:function(data,row, index){
+                if(data=='0'){
+                    return '否';
+                }else if(data=='1'){
+                    return '是';
+                }
+                return "";
+            }
+        },{
+            field : 'invent_des',
+            title : '详细',
+            width : 200,
+            align : 'center'
+        }] ];
+
+        function doDblClickRow(rowIndex, rowData){
+            $('#association_subarea').datagrid( {
+                fit : true,
+                border : true,
+                rownumbers : true,
+                striped : true,
+                url : "/invent/inventSugListByInventId?invent_id="+rowData.id,
+                columns : [ [ {
+                    field : 'invent_sug',
+                    title : '处理意见',
+                    width : 200,
+                    align : 'center'
+                },{
+                    field : 'status_cd',
+                    title : '操作',
+                    width : 150,
+                    align : 'center',formatter:function(data,row, index){
+                        if(data=='0'){
+                            return '驳回';
+                        }else if(data=='1'){
+                            return '同意';
+                        }
+                        return "";
+                    }
+                },{
+                    field : 'invent_id',
+                    title : '处理人',
+                    width : 150,
+                    align : 'center',formatter:function(data,row, index){
+                        if(row.user!=null){
+                            return row.user.username;
+                        }
+                        return "";
+                    }
+                },{
+                    field : 'create_date',
+                    title : '处理时间',
+                    width : 150,
+                    align : 'center'
+                }] ]
+            });
+
+        }
+    </script>
+</head>
+
+<body class="easyui-layout" style="visibility:hidden;">
+<div region="center" border="false">
+    <div id="tb">
+        <!--<a href="#" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="javascript:doAdd()" style="display: none;" permission="sys:invent:add">新增</a>
+        <a href="#" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="javascript:doEdit()" style="display: none" permission="sys:invent:edit">修改</a>-->
+        <a href="#" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="javascript:doVerify()" style="display: none" permission="sys:invent:verify">审核</a>
+        <a href="#" class="easyui-linkbutton" iconCls="icon-cancel" plain="true" onclick="javascript:doDelete()" style="display: none" permission="sys:invent:del">删除</a>
+        <a href="#" class="easyui-linkbutton" iconCls="icon-search" plain="true" onclick="javascript:doSearch()" >搜索</a>
+    </div>
+    <table id="grid"></table>
+</div>
+<div region="south" border="false" style="height:150px;" id="qweqweqweq">
+    <div id="tabs" fit="true" class="easyui-tabs">
+        <div title="申报处理" id="subArea" style="width:100%;height:100%;overflow:hidden">
+            <table id="association_subarea"></table>
+        </div>
+    </div>
+</div>
+
+<div class="easyui-window" title="审核" id="standardWindow" collapsible="false" minimizable="false" maximizable="false" modal="true" closed="true" style="width:700px;top:10px;left:200px">
+    <div region="north" style="height:31px;overflow:hidden;" split="false" border="false">
+        <div class="datagrid-toolbar">
+            <a id="save" icon="icon-save" href="#" class="easyui-linkbutton" plain="true">保存</a>
+        </div>
+    </div>
+
+    <div region="center" style="overflow:auto;padding:5px;" border="false">
+        <form id='formdata'  method="post" enctype="multipart/form-data" action="/invent/save">
+            <table class="table-edit" width="80%" align="center">
+                <tr class="title">
+                    <td colspan="2">
+                        <input type="hidden" name="invent_id" id="invent_id_h"/>
+                        <input type="hidden" name="user_id" id="user_id_h"/>
+                    </td>
+                </tr>
+
+                </tr>
+                    <td>审核意见</td>
+                    <td>
+                        <textarea name="invent_sug" style="width: 160px;height: 40px;" ></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td>是否同意</td>
+                    <td>
+                        <select name="status_cd" class="easyui-combobox" style="width: 150px;">
+                            <option value="0">驳回</option>
+                            <option value="1">同意</option>
+                        </select>
+                    </td>
+                </tr>
+
+
+            </table>
+        </form>
+    </div>
+</div>
+<div class="easyui-window" title="搜索" id="standardWindow_s" collapsible="false" minimizable="false" maximizable="false" modal="true" closed="true" style="width:700px;top:10px;left:200px">
+    <div region="north" style="height:31px;overflow:hidden;" split="false" border="false">
+        <div class="datagrid-toolbar">
+            <a id="search" onclick="doSearch_clik()" icon="icon-search" href="#" class="easyui-linkbutton" plain="true">搜索</a>
+        </div>
+    </div>
+
+    <div region="center" style="overflow:auto;padding:5px;" border="false">
+        <form id='formdata_s'  method="post" enctype="multipart/form-data" target="myiframe">
+            <table class="table-edit" width="80%" align="center">
+                <tr>
+
+                    <td>专利名称</td>
+                    <td>
+                        <input type="text" name="invent_name"
+                               class="easyui-validatebox" />
+                    </td>
+                </tr>
+                <tr>
+
+                    <td>专利类型</td>
+                    <td>
+                        <input class="easyui-combobox" name="cate_type"
+                               data-options="valueField:'id',textField:'name',url:'/cate_type/list'"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>申请状态</td>
+                    <td>
+                        <select name="status_cd" class="easyui-combobox" style="width: 150px;">
+                            <option value="">--请选择--</option>
+                            <option value="0">申请中</option>
+                            <option value="1">已审核</option>
+                        </select>
+                    </td>
+                </tr>
+
+            </table>
+        </form>
+    </div>
+</div>
+</body>
+
+</html>
