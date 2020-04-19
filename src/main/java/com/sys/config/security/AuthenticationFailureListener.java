@@ -17,6 +17,7 @@ public class AuthenticationFailureListener
         WebAuthenticationDetails auth = (WebAuthenticationDetails)
                 e.getAuthentication().getDetails();
 
-        loginAttemptService.loginFailed(auth.getRemoteAddress());
+        String account = e.getAuthentication().getPrincipal().toString();
+        loginAttemptService.loginFailed(account);
     }
 }

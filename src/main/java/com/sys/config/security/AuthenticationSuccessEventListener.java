@@ -17,6 +17,7 @@ public class AuthenticationSuccessEventListener
         WebAuthenticationDetails auth = (WebAuthenticationDetails)
                 e.getAuthentication().getDetails();
 
-        loginAttemptService.loginSucceeded(auth.getRemoteAddress());
+        String account = e.getAuthentication().getPrincipal().toString();
+        loginAttemptService.loginSucceeded(account);
     }
 }

@@ -7,6 +7,7 @@ import com.sys.entity.LoginUser;
 import com.sys.entity.SysPermission;
 import com.sys.entity.SysUser;
 import com.sys.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
@@ -26,6 +27,7 @@ import java.util.List;
  * spring security登陆处理<br>
  */
 
+@Slf4j
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
@@ -36,9 +38,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
 	@Autowired
 	private LoginAttemptService loginAttemptService;
-
-	@Autowired
-	private HttpServletRequest request;
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -51,14 +50,18 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 			throw new DisabledException("用户已作废,请联系管理员");
 		}
 
-		String ip = request.getRemoteAddr();
-		if (loginAttemptService.isBlocked(ip)) {
+		if (loginAttemptService.isBlocked(username)) {
 			//锁定用户
 			List<Long> list = new ArrayList<>();
 			list.add(sysUser.getId().longValue());
 			userService.lockUser(list,SysUser.Status.LOCKED);
+			log.info("用户已被锁定："+username);
 			throw new RuntimeException("用户被锁定,请联系管理员");
 		}
+		/*log.info("剩余次数："+username+"-"+loginAttemptService.getAttemptFailNum(username));
+		if(!loginAttemptService.getAttemptFailNum(username).equals(0)){
+			throw new RuntimeException("密码输入错误，剩余次数："+loginAttemptService.getAttemptFailNum(username));
+		}*/
 
 		LoginUser loginUser = new LoginUser();
 		BeanUtils.copyProperties(sysUser, loginUser);

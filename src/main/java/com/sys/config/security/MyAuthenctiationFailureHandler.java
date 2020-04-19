@@ -27,14 +27,10 @@ public class MyAuthenctiationFailureHandler extends SimpleUrlAuthenticationFailu
     @Autowired
     private LoginAttemptService loginAttemptService;
 
-    @Autowired
-    private HttpServletRequest request;
-
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
         log.info("登陆失败");
-        Exception e1 = (Exception) exception.getCause();
         if ("json".equals("json")) {
             response.setHeader("Access-Control-Allow-Origin", "*");
             response.setHeader("Access-Control-Allow-Methods", "*");
@@ -56,7 +52,7 @@ public class MyAuthenctiationFailureHandler extends SimpleUrlAuthenticationFailu
             }else if(exception.getCause() instanceof RuntimeException){
                 map.put("message",exception.getMessage());
             }else if(exception instanceof BadCredentialsException){
-                map.put("message","密码输入错误，剩余次数："+loginAttemptService.getAttemptFailNum(request.getRemoteAddr()));
+                map.put("message","密码输入错误，剩余次数："+loginAttemptService.getAttemptFailNum(request.getParameter("username")));
             }else{
                 map.put("message","登录失败!");
             }
